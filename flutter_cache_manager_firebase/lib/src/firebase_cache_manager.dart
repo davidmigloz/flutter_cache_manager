@@ -1,3 +1,4 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:retry/retry.dart';
 
@@ -8,21 +9,39 @@ import 'firebase_http_file_service.dart';
 class FirebaseCacheManager extends CacheManager {
   static const key = 'firebaseCache';
 
-  static final FirebaseCacheManager _instance =
-      FirebaseCacheManager._(retryOptions: _retryOptions, bucket: _bucket);
+  static final FirebaseCacheManager _instance = FirebaseCacheManager._(
+    firebaseStorage: _firebaseStorage,
+    bucket: _bucket,
+    retryOptions: _retryOptions,
+  );
 
-  static RetryOptions? _retryOptions;
+  static late final FirebaseStorage? _firebaseStorage;
+  static late final String? _bucket;
+  static late final RetryOptions? _retryOptions;
 
-  static String? _bucket;
-
-  factory FirebaseCacheManager({RetryOptions? retryOptions, String? bucket}) {
+  factory FirebaseCacheManager({
+    FirebaseStorage? firebaseStorage,
+    String? bucket,
+    RetryOptions? retryOptions,
+  }) {
+    _firebaseStorage = firebaseStorage;
     _bucket = bucket;
     _retryOptions = retryOptions;
     return _instance;
   }
 
-  FirebaseCacheManager._({RetryOptions? retryOptions, String? bucket})
-      : super(Config(key,
+  FirebaseCacheManager._({
+    FirebaseStorage? firebaseStorage,
+    String? bucket,
+    RetryOptions? retryOptions,
+  }) : super(
+          Config(
+            key,
             fileService: FirebaseHttpFileService(
-                retryOptions: retryOptions, bucket: bucket)));
+              firebaseStorage: firebaseStorage,
+              bucket: bucket,
+              retryOptions: retryOptions,
+            ),
+          ),
+        );
 }

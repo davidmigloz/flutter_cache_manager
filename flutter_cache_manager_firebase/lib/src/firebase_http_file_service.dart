@@ -6,24 +6,31 @@ import 'package:retry/retry.dart';
 /// firebase reference into, to standard url which can be passed to the
 /// standard [HttpFileService].
 class FirebaseHttpFileService extends HttpFileService {
-  final RetryOptions? retryOptions;
-
   FirebaseHttpFileService({
+    final FirebaseStorage? firebaseStorage,
+    final String? bucket,
     this.retryOptions,
-    this.bucket,
-  }) : super();
+  }) : super() {
+    if (firebaseStorage != null) {
+      _fs = firebaseStorage;
+    } else if (bucket != null) {
+      _fs = FirebaseStorage.instanceFor(bucket: "gs://$bucket");
+    } else {
+      _fs = FirebaseStorage.instance;
+    }
+  }
 
-  final String? bucket;
+  late final FirebaseStorage _fs;
+  final RetryOptions? retryOptions;
 
   @override
   Future<FileServiceResponse> get(String url,
       {Map<String, String>? headers}) async {
-    late Reference ref;
-    if (bucket != null) {
-      ref =
-          FirebaseStorage.instanceFor(bucket: "gs://$bucket").ref().child(url);
+    final Reference ref;
+    if (url.startsWith("gs://")) {
+      ref = _fs.refFromURL(url);
     } else {
-      ref = FirebaseStorage.instance.ref().child(url);
+      ref = _fs.ref(url);
     }
 
     String downloadUrl;
